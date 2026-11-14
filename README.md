@@ -196,14 +196,101 @@ NB: Since I already have an account I will just skip this process and just give 
 ### Step 1: Create a Dedicated Resource Group (SOC-Lab-RG)
 
 • Open Azure Portal: Log into https://azure.com with your Azure Free Trial account (josephatoyebi2020@gmail.com).
+
 • Create Resource Group: Search for Resource groups in the top search bar, click + Create, name it SOC-Lab-RG, select (UK) UK South as the region, and click Review + create > Create.
 
-### Step 2: Provision the Log Analytics Workspace (soc-lab-logs-01)
+
+### Step 2: Create a Dedicated Resource Group (SOC-Lab-RG)
+
+A Resource Group acts as a logical container for all your SOC lab resources so you can easily manage, monitor, and clean them up later.
+
+• Open Resource Groups: 
+	* Click inside the top blue search bar, type Resource groups, and select Resource groups under Services.
+
+• Start Creation: 
+	* Click the + Create button at the top left of the screen.
+
+• Fill Out the Basics Tab:
+	
+	• Subscription: Leave your active Azure subscription selected (Azure subscription 1 / Free Trial).
+	
+	• Resource group: Type SOC-Lab-RG.
+	
+	• Region: Select (UK) UK South from the dropdown menu.
+
+• Validate & Deploy: Click Review + create at the bottom, wait a few seconds for the green Validation passed banner, and click Create.
+
+<img width="1646" height="918" alt="image" src="https://github.com/user-attachments/assets/52dd9ca1-9667-452c-941f-e21fa1acdec5" />
+
+<img width="1914" height="915" alt="image" src="https://github.com/user-attachments/assets/1781a940-ed5a-444d-8f6a-393dce36b412" />
+
+### Step 3: Provision the Log Analytics Workspace (soc-lab-logs-01)
 
 Microsoft Sentinel stores all ingested security logs inside an Azure Log Analytics workspace.
 • Search Workspaces: Type Log Analytics workspaces in the top Azure search bar and click + Create.
+
 • Configure Basics:
+	
 	• Resource group: Select SOC-Lab-RG.
+	
 	• Name: Type soc-lab-logs-01.
+	
 	• Region: Select (UK) UK South (matching your resource group).
+
 • Deploy: Click Review + create, wait for validation to pass, and click Create.
+
+<img width="1640" height="918" alt="image" src="https://github.com/user-attachments/assets/50ae77ed-6eaf-4867-a491-9bf204e8c02e" />
+
+<img width="1911" height="912" alt="image" src="https://github.com/user-attachments/assets/6683369b-ec43-4e57-a0a4-fb3fc3779425" />
+
+### Step 4: Onboard Microsoft Sentinel onto Your Workspace
+
+• Open Sentinel: Search for Microsoft Sentinel in the top Azure search bar and click + Create.
+
+• Attach Workspace: Select soc-lab-logs-01 from the list and click Add at the bottom.
+
+• Verify Onboarding: Once deployment finishes, your workspace opens inside the Microsoft Sentinel dashboard (ready to receive telemetry).
+
+<img width="1909" height="908" alt="image" src="https://github.com/user-attachments/assets/91f7ce35-aa2c-42dc-a75b-f653c60f12b1" />
+
+---
+
+Immediately after the Installation of the Microsoft Sentinel, the following error popped up:
+
+<img width="1917" height="886" alt="Screenshot 2026-11-13 081920" src="https://github.com/user-attachments/assets/3c8ae89c-c21b-46cd-a854-b29f480dc90e" />
+
+* To correct the error, we need to set up Step 5.
+
+---
+
+### Step 5: Stream Microsoft Entra ID Logs (SigninLogs & AuditLogs)
+
+Because Free Trial tenants without a Microsoft Entra ID P1/P2 license block the one-click Sentinel data connector, you configured Diagnostic Settings directly inside Entra ID to stream live identity telemetry into your workspace:
+
+• Open Microsoft Entra ID: Search for Microsoft Entra ID in the top Azure search bar and open it.
+
+• Navigate to Diagnostic Settings: In the left-hand menu, expand Monitoring & health (or Monitoring) and click Diagnostic settings.
+
+• Create Diagnostic Setting: Click + Add diagnostic setting and configure:
+
+	• Diagnostic setting name: Type Entra-to-Sentinel.
+	
+	• Logs (Categories to Stream): Check SignInLogs (tracks every successful and failed login attempt) and AuditLogs (tracks user creation, password resets, and role changes). Also check NonInteractiveUserSignInLogs, if available.
+	
+	• Destination details: Check Send to Log Analytics workspace, select your subscription, and choose soc-lab-logs-01.
+
+• Save Configuration: Click Save at the top left to start streaming live identity events into Microsoft Sentinel.
+
+<img width="1919" height="914" alt="image" src="https://github.com/user-attachments/assets/c1a9c05d-8cee-4d23-890e-95cf9359ac66" />
+
+<img width="1919" height="888" alt="image" src="https://github.com/user-attachments/assets/8d107a5e-96fa-4f7d-b97c-a6c292e8c344" />
+
+
+### Step 6: Verify Log Ingestion in Microsoft Sentinel
+
+• Open Logs: Return to Microsoft Sentinel > select soc-lab-logs-01 > click Logs in the left-hand menu.
+
+• Confirm Tables Exist: Check the Tables pane on the left under LogManagement (or Microsoft Entra ID) to confirm SigninLogs and AuditLogs appear and populate within 10–15 minutes of activity.
+
+<img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/fbb7d7fb-8b56-4a1d-87d0-cbb67e3b2a01" />
+
