@@ -369,42 +369,114 @@ You should see your failed login attempts for test.victim@://onmicrosoft.com wit
 
 <img width="1918" height="911" alt="Screenshot 2026-11-13 134401" src="https://github.com/user-attachments/assets/aac353cf-7980-4607-a50d-d61821b93588" />
 
-<img width="1912" height="913" alt="image" src="https://github.com/user-attachments/assets/250c20c2-2801-4eb3-b582-8a127a365565" />
-
 ---
 
 ---
 
-# Lab 3:
+# Lab 3: 
 
-## SIEM Detection Engineering & Rule Tuning: Authored and tuned a scheduled Sentinel analytics rule mapped to the MITRE ATT&CK Credential Access tactic, configuring Entity Mapping (Account and IP) for automated forensic extraction.
+## SIEM Detection Engineering & Rule Tuning, matching the exact KQL logic, MITRE ATT&CK mapping, entity mapping, and iterative tuning you performed in your project.
 
-### Step 1: Turn Your Query Into an Automated Brute-Force Alert Rule
+### Step 1: Open Microsoft Sentinel Analytics
 
-Once SigninLogs shows our failed attempts, lets turn it into a real-time SIEM detection rule so Sentinel raises an incident automatically whenever someone tries to brute-force an account:
-1. Open your Microsoft Defender portal tab (://microsoft.com), expand Microsoft Sentinel > Configuration > Analytics, and click + Create > Scheduled query rule.
-2. General Tab:
-	• Name: SOC Lab - Entra ID Brute Force Attempt
-	• Severity: Medium
-	• MITRE ATT&CK Tactics: Check Credential Access (great practice for real SOC rule tagging!).
-	• Click Next: Set rule logic >.
+• Navigate to Defender Portal: Open https://microsoft.com (or open Microsoft Sentinel in Azure and click Go to Microsoft Defender portal).
+• Open Analytics: Expand the left-hand navigation menu, scroll down to Microsoft Sentinel > Configuration, and click Analytics.
+• Start Rule Creation: Click + Create at the top left and select Scheduled query rule from the dropdown.
 
-<img width="1902" height="907" alt="image" src="https://github.com/user-attachments/assets/44958552-1dca-4980-9af7-2bc1516fb41d" />
+### Step 2: Configure Rule Metadata & MITRE ATT&CK Mapping (General Tab)
 
-3. Set Rule Logic Tab:
-	• Paste this KQL query into the Rule query box:
+• Name: Type SOC Lab - Entra ID Brute Force Attempt.
+• Description: Enter Detects 3 or more failed sign-in or Smart Lockout attempts against an Entra ID account from the same IP address within a 5-minute window.
+• Severity: Select Medium.
+• Tactics and Techniques (MITRE ATT&CK):
+	• Click the Tactics and techniques dropdown and check Credential Access (aligns with T1110 – Brute Force).
+• Status: Confirm the rule toggle is set to Enabled, then click Next : Set rule logic >.
+
+### Step 3: Author & Tune the KQL Detection Logic (Set Rule Logic Tab)
+
+Initially, detection rules filtering only for invalid passwords (ResultType == "50126") miss subsequent rapid attempts once Microsoft Entra ID Smart Lockout (ResultType == "50053") blocks the account. You tuned the KQL query to capture both states and prevent false negatives:
+
+• Paste Tuned KQL Query into Rule Query:
 
 ```
 SigninLogs
-| where ResultType == "50126"
+| where ResultType in ("50126", "50053")
 | summarize FailedAttempts = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 5m)
 | where FailedAttempts >= 3
 ```
+• Verify Simulation Preview: Check the Results simulation chart on the right side of the screen to confirm the query validates cleanly with zero syntax errors.
 
-• Under Entity mapping (optional but great SOC practice), map Account -> UserPrincipalName and IP -> IPAddress.
-	• Set Run query every and Lookup data from the last to 5 Minutes.
-	• Click Next: Incident settings >, Next: Automated response >, Next: Review + create >, and click Create.
+### Step 4: Configure Entity Mapping for Forensic Extraction
+
+Mapping KQL output columns to native Sentinel entities tells the SIEM to automatically extract and display the target user and attacker IP inside the incident's Evidence / Entities tab.
+
+• Expand Entity Mapping: Scroll down on the Set rule logic tab to Alert enhancement > Entity mapping and click to expand it.
+
+• Map Target User Account:
+
+	• Click + Add new entity.
+	
+	• Entity type: Select Account.
+	
+	• Identifier: Select FullName.
+	
+	• Value: Select UserPrincipalName from the dropdown.
+
+• Map Attacker Source IP:
+	
+	• Click + Add new entity again.
+	
+	• Entity type: Select IP.
+	
+	• Identifier: Select Address.
+	
+	• Value: Select IPAddress from the dropdown.
+
+### Step 5: Set Query Scheduling & Alert Threshold
+
+• Query Scheduling:
+	
+	• Run query every: Set to 5 Minutes.
+	
+	• Lookup data from the last: Set to 5 Minutes.
+
+• Alert Threshold: Leave Generate alert when number of query results set to Is greater than 0.
+
+• Event Grouping: Keep Group all events into a single alert selected so multiple failed attempts from the same IP and user generate one clean alert rather than flooding the queue.
+
+### Step 6: Configure Incident Settings & Deploy Rule
+
+• Incident Settings Tab: Click Next : Incident settings > and confirm Create incidents from alerts triggered by this analytics rule is Enabled.
+
+• Automated Response Tab: Click Next : Automated response > (left blank initially until linking the SOAR playbook in Lab 4).
+
+• Review + Create Tab: Click Next : Review + create >, wait for the green Validation passed banner, and click Save to activate your detection rule.
+
+
+
+
+<img width="1902" height="907" alt="image" src="https://github.com/user-attachments/assets/44958552-1dca-4980-9af7-2bc1516fb41d" />
 
 <img width="1903" height="927" alt="Screenshot 2026-11-13 142643" src="https://github.com/user-attachments/assets/3295c24c-7f62-48db-b8d3-9fde770d4227" />
+<img width="827" height="476" alt="Screenshot 2026-11-13 165647" src="https://github.com/user-attachments/assets/e4f206a3-0707-4532-a84b-3f2deaaf67b0" />
 
+
+
+<img width="1912" height="913" alt="image" src="https://github.com/user-attachments/assets/250c20c2-2801-4eb3-b582-8a127a365565" />
 	
+Results:
+
+• Incident ID 3: SOC Lab - Entra ID Brute...
+
+• Status: New
+
+• Severity: Medium (orange badge)
+
+We have officially built a working Cloud Identity Threat Detection Pipeline in Microsoft Sentinel—capturing live failed login telemetry (SigninLogs), detecting a credential-access brute-force pattern with KQL, and raising a Medium-severity security incident.
+
+---
+
+---
+
+Building an Automated SOAR Playbook using Azure Logic Apps is one of the best resume builders for a SOC Analyst. In a real SOC, analysts use SOAR (Security Orchestration, Automation, and Response) so that the moment a high-risk brute-force alert triggers, an automated workflow instantly emails the on-call analyst with the incident title, severity, and attacker details.
+Here is your step-by-step guide to building and connecting your first Sentinel SOAR Playbook:
