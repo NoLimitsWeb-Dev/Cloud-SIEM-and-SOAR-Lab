@@ -380,17 +380,26 @@ You should see your failed login attempts for test.victim@://onmicrosoft.com wit
 ### Step 1: Open Microsoft Sentinel Analytics
 
 • Navigate to Defender Portal: Open https://microsoft.com (or open Microsoft Sentinel in Azure and click Go to Microsoft Defender portal).
+
 • Open Analytics: Expand the left-hand navigation menu, scroll down to Microsoft Sentinel > Configuration, and click Analytics.
+
 • Start Rule Creation: Click + Create at the top left and select Scheduled query rule from the dropdown.
 
 ### Step 2: Configure Rule Metadata & MITRE ATT&CK Mapping (General Tab)
 
 • Name: Type SOC Lab - Entra ID Brute Force Attempt.
+
 • Description: Enter Detects 3 or more failed sign-in or Smart Lockout attempts against an Entra ID account from the same IP address within a 5-minute window.
+
 • Severity: Select Medium.
+
 • Tactics and Techniques (MITRE ATT&CK):
+
 	• Click the Tactics and techniques dropdown and check Credential Access (aligns with T1110 – Brute Force).
+
 • Status: Confirm the rule toggle is set to Enabled, then click Next : Set rule logic >.
+
+<img width="1902" height="907" alt="image" src="https://github.com/user-attachments/assets/44958552-1dca-4980-9af7-2bc1516fb41d" />
 
 ### Step 3: Author & Tune the KQL Detection Logic (Set Rule Logic Tab)
 
@@ -404,6 +413,9 @@ SigninLogs
 | summarize FailedAttempts = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 5m)
 | where FailedAttempts >= 3
 ```
+
+<img width="1903" height="927" alt="Screenshot 2026-11-13 142643" src="https://github.com/user-attachments/assets/3295c24c-7f62-48db-b8d3-9fde770d4227" />
+
 • Verify Simulation Preview: Check the Results simulation chart on the right side of the screen to confirm the query validates cleanly with zero syntax errors.
 
 ### Step 4: Configure Entity Mapping for Forensic Extraction
@@ -432,6 +444,8 @@ Mapping KQL output columns to native Sentinel entities tells the SIEM to automat
 	
 	• Value: Select IPAddress from the dropdown.
 
+<img width="827" height="476" alt="Screenshot 2026-11-13 165647" src="https://github.com/user-attachments/assets/e4f206a3-0707-4532-a84b-3f2deaaf67b0" />
+
 ### Step 5: Set Query Scheduling & Alert Threshold
 
 • Query Scheduling:
@@ -451,15 +465,6 @@ Mapping KQL output columns to native Sentinel entities tells the SIEM to automat
 • Automated Response Tab: Click Next : Automated response > (left blank initially until linking the SOAR playbook in Lab 4).
 
 • Review + Create Tab: Click Next : Review + create >, wait for the green Validation passed banner, and click Save to activate your detection rule.
-
-
-
-
-<img width="1902" height="907" alt="image" src="https://github.com/user-attachments/assets/44958552-1dca-4980-9af7-2bc1516fb41d" />
-
-<img width="1903" height="927" alt="Screenshot 2026-11-13 142643" src="https://github.com/user-attachments/assets/3295c24c-7f62-48db-b8d3-9fde770d4227" />
-<img width="827" height="476" alt="Screenshot 2026-11-13 165647" src="https://github.com/user-attachments/assets/e4f206a3-0707-4532-a84b-3f2deaaf67b0" />
-
 
 
 <img width="1912" height="913" alt="image" src="https://github.com/user-attachments/assets/250c20c2-2801-4eb3-b582-8a127a365565" />
