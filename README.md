@@ -137,7 +137,7 @@ You can copy and paste this entire Markdown report directly into your GitHub rep
 
 # Step By Step
 
-## MIcrosoft Azure
+## Microsoft Azure
 
 ### Step-by-Step Registration Process
 
@@ -294,3 +294,117 @@ Because Free Trial tenants without a Microsoft Entra ID P1/P2 license block the 
 
 <img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/fbb7d7fb-8b56-4a1d-87d0-cbb67e3b2a01" />
 
+<img width="1913" height="917" alt="Screenshot 2026-11-13 091404" src="https://github.com/user-attachments/assets/ef59783d-a4b1-42c7-81de-117b3fa5603c" />
+
+---
+
+---
+
+# Lab 2:
+
+## Adversarial Brute-Force Simulation & KQL Threat Hunting
+
+### Step 1: Provision a Non-Privileged Target Account (test.victim)
+
+In a real SOC lab, you never run brute-force simulations against your primary Global Administrator account to avoid locking yourself out of your Azure tenant.
+
+• Open Microsoft Entra ID: In the Azure Portal (https://azure.com), search for Microsoft Entra ID in the top search bar and open it.
+
+• Go to Users: In the left-hand menu, expand Manage > click Users, then click + New user > Create new user at the top.
+
+• Configure Identity Details:
+
+	• User principal name: Type test.victim (your full login username automatically becomes test.victim@://onmicrosoft.com).
+	
+	• Display name: Type Test Victim.
+	
+	• Password: Uncheck Auto-generate password and set a temporary initial password (e.g., LabTest2026!).
+
+• Deploy User: Click Review + create, then click Create.
+
+<img width="1919" height="922" alt="image" src="https://github.com/user-attachments/assets/0a88bcba-7f12-4481-96af-850cc4a44800" />
+
+<img width="1912" height="905" alt="image" src="https://github.com/user-attachments/assets/834cca54-486f-4c8a-a13b-608b4b2036c0" />
+
+
+### Step 2: Simulate a Credential Brute-Force Attack
+
+To generate realistic malicious telemetry without contaminating my active admin session, execute the failed logins from an isolated browser session.
+
+• Open an Incognito Window: Open a new Incognito / Private browser window (Ctrl + Shift + N in Chrome/Edge) and navigate to https://azure.com.
+
+<img width="1919" height="1000" alt="Screenshot 2026-11-14 120748" src="https://github.com/user-attachments/assets/1042c078-f8e8-4b07-b6e2-5e9fd54ef585" />
+
+• Enter Target Username: In the Microsoft sign-in prompt, type test.victim@://onmicrosoft.com and click Next.
+
+<img width="649" height="692" alt="image" src="https://github.com/user-attachments/assets/c9e50fd0-64f4-4e05-bed8-15b1066c3416" />
+
+• Execute Failed Login Attempts: Type an incorrect password (such as WrongPass123!) and click Sign in 4 to 5 times in a row until Microsoft displays an invalid password or Smart Lockout warning.
+
+<img width="582" height="518" alt="image" src="https://github.com/user-attachments/assets/1602a735-bb7f-4c40-a468-7941578a707d" />
+
+• Close Session: Close the Incognito window and wait 5 to 10 minutes for Entra ID to stream the telemetry into your Log Analytics workspace.
+
+Because this is the very first time Entra ID is streaming sign-in logs into your Log Analytics workspace, give Azure about 10 to 15 minutes to initialize the SigninLogs table and deliver your failed attempts.
+
+### Step 3: Hunt Your Brute-Force Attempts in Microsoft Sentinel
+
+1. Switch back to your Azure Portal tab, open Microsoft Sentinel, select your workspace (soc-lab-logs-01), and click Logs in the left menu.
+2. Set the Time range next to the blue Run button to Last 1 hour (or Last 4 hours).
+3. Paste this KQL query into the editor and click Run:
+
+kql
+```
+SigninLogs
+| where ResultType != "0"
+| project TimeGenerated, UserPrincipalName, IPAddress, Location, ResultType, ResultDescription
+| sort by TimeGenerated desc
+```
+
+<img width="1918" height="911" alt="Screenshot 2026-11-13 134401" src="https://github.com/user-attachments/assets/4066edf2-fab9-4611-9690-8494126e44d5" />
+
+4. What to Look For:
+
+You should see your failed login attempts for test.victim@://onmicrosoft.com with ResultType == 50126 ***("Error validating credentials due to invalid username or password")***, along with your **IPAddress** and **Location**. (If it says "No results found" right away, wait 5 more minutes and click Run again).
+
+<img width="1918" height="911" alt="Screenshot 2026-11-13 134401" src="https://github.com/user-attachments/assets/aac353cf-7980-4607-a50d-d61821b93588" />
+
+<img width="1912" height="913" alt="image" src="https://github.com/user-attachments/assets/250c20c2-2801-4eb3-b582-8a127a365565" />
+
+---
+
+---
+
+# Lab 3:
+
+## SIEM Detection Engineering & Rule Tuning: Authored and tuned a scheduled Sentinel analytics rule mapped to the MITRE ATT&CK Credential Access tactic, configuring Entity Mapping (Account and IP) for automated forensic extraction.
+
+### Step 1: Turn Your Query Into an Automated Brute-Force Alert Rule
+
+Once SigninLogs shows our failed attempts, lets turn it into a real-time SIEM detection rule so Sentinel raises an incident automatically whenever someone tries to brute-force an account:
+1. Open your Microsoft Defender portal tab (://microsoft.com), expand Microsoft Sentinel > Configuration > Analytics, and click + Create > Scheduled query rule.
+2. General Tab:
+	• Name: SOC Lab - Entra ID Brute Force Attempt
+	• Severity: Medium
+	• MITRE ATT&CK Tactics: Check Credential Access (great practice for real SOC rule tagging!).
+	• Click Next: Set rule logic >.
+
+<img width="1902" height="907" alt="image" src="https://github.com/user-attachments/assets/44958552-1dca-4980-9af7-2bc1516fb41d" />
+
+3. Set Rule Logic Tab:
+	• Paste this KQL query into the Rule query box:
+
+```
+SigninLogs
+| where ResultType == "50126"
+| summarize FailedAttempts = count() by UserPrincipalName, IPAddress, bin(TimeGenerated, 5m)
+| where FailedAttempts >= 3
+```
+
+• Under Entity mapping (optional but great SOC practice), map Account -> UserPrincipalName and IP -> IPAddress.
+	• Set Run query every and Lookup data from the last to 5 Minutes.
+	• Click Next: Incident settings >, Next: Automated response >, Next: Review + create >, and click Create.
+
+<img width="1903" height="927" alt="Screenshot 2026-11-13 142643" src="https://github.com/user-attachments/assets/3295c24c-7f62-48db-b8d3-9fde770d4227" />
+
+	
