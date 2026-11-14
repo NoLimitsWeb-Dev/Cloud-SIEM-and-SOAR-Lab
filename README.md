@@ -556,27 +556,138 @@ To avoid third-party OAuth blocks on personal @gmail.com accounts, you configure
 	• Click the + icon directly beneath the trigger > Add an action, search for SMTP, and select Send Email (V3).
 	
 	• Enter the SMTP connection details:
+		
 		• Connection Name: Gmail-SMTP-SOC
+		
 		• SMTP Server Address: ://gmail.com
+		
 		• User Name: josephatoyebi2020@gmail.com
+		
 		• Password: Paste your 16-character Google App Password
+		
 		• SMTP Server Port: 587
+		
 		• Enable SSL?: Checked (Yes)
+	
 	• Click Create new.
+
+<img width="783" height="609" alt="Screenshot 2026-11-13 194037" src="https://github.com/user-attachments/assets/43f69b6a-c7eb-498e-9cd0-fae38e4dc30d" />
+
 • Design Dynamic Alert Template:
+	
 	• Click Show all under Advanced parameters to reveal all email fields.
+	
 	• From & To: Enter josephatoyebi2020@gmail.com in both fields.
+	
 	• Subject: Type SOC ALERT:  and insert Incident Title from the Dynamic content (lightning bolt) menu.
+	
 	• Body: Paste your structured SOC alert template and insert dynamic telemetry tags (Incident Title, Incident Severity, Incident Status, Incident Description, and Incident URL).
+
+	
+```
+Hello SOC Analyst,
+
+A new security incident has been triggered in Microsoft Sentinel.
+
+- Incident ID: [Insert Dynamic Content: Incident number]
+- Title: [Insert Dynamic Content: Incident title]
+- Severity: [Insert Dynamic Content: Incident severity]
+- Status: [Insert Dynamic Content: Incident status]
+- Description: [Insert Dynamic Content: Incident description]
+
+Please log into the Microsoft Defender portal to investigate immediately.
+
+```
+
+<img width="583" height="538" alt="Screenshot 2026-11-13 210029" src="https://github.com/user-attachments/assets/e60efe42-fe9d-4ca5-9e6a-3efe32c96f8c" />
+
 • Publish Playbook: Click the blue Publish button at the top right of the Logic App Designer to activate the workflow.
 
-Step 5: Link the Playbook via a Sentinel Automation Rule
+### Step 5: Link the Playbook via a Sentinel Automation Rule
 
 • Open Sentinel Automation: Navigate to the Microsoft Defender portal (https://microsoft.com), expand Microsoft Sentinel > Configuration, and click Automation.
+
+<img width="1877" height="896" alt="Screenshot 2026-11-13 210719" src="https://github.com/user-attachments/assets/35fd4c57-b45b-46eb-adc9-c7faff6a183b" />
+
 • Create Automation Rule: Click + Create > Automation rule and configure:
+
 	• Automation rule name: Auto-Email on Brute Force Incident
+	
 	• Trigger: When incident is created
+	
 	• Conditions: Incident provider Equals Microsoft Sentinel AND Analytics rule name Contains SOC Lab - Entra ID Brute Force Attempt
+	
 	• Actions: Select Run playbook.
+
 • Grant Playbook Permissions: Click Manage playbook permissions, check SOC-Lab-RG, and click Apply.
+
 • Attach & Activate: Select Playbook-BruteForce-Email from the playbook dropdown and click Apply at the bottom to save and enable the rule.
+
+<img width="1133" height="812" alt="Screenshot 2026-11-13 224637" src="https://github.com/user-attachments/assets/001fabc2-20ff-4bce-8f0d-c7aa40aeef59" />
+
+
+---
+
+To investigate the brute-force attack in my lab (or in a real SOC environment), follow a structured Tier-1 / Tier-2 SOC Incident Triage Workflow. This proves I can go beyond just seeing an alert and determine scope, impact, and containment.
+
+### Step 1: Triage & Enrich the Incident in Microsoft Defender
+
+<img width="1878" height="882" alt="image" src="https://github.com/user-attachments/assets/e8db206a-4ed3-44c4-a2e1-f3087e8b100b" />
+
+• Assign Ownership: Open your brute-force incident under Incidents (://microsoft.com), assign it to yourself (Assign to me), and change the status from New to In progress / Active.
+
+• Inspect Mapped Entities: Open the Evidence / Entities tab to identify the core forensic indicators extracted by your analytics rule.
+	
+	• Target Account: test.victim@://onmicrosoft.com
+	
+	• Attacker Source IP: 102.88.115.140
+
+<img width="1889" height="905" alt="image" src="https://github.com/user-attachments/assets/3e2384b1-ad82-43f4-8c5d-a62ed581ba6f" />
+
+<img width="1918" height="907" alt="image" src="https://github.com/user-attachments/assets/a415bb2c-865b-42d8-9331-e9abe30f57c2" />
+
+
+### Step 2: Check for Account Compromise (Did the Attacker Get In?)
+
+The most critical question in any brute-force investigation is whether any login attempt succeeded (ResultType == "0").
+
+• Open Logs / Advanced Hunting: Navigate to Microsoft Sentinel > Logs (or Advanced hunting in Defender) and run this KQL query:
+
+<img width="1912" height="861" alt="image" src="https://github.com/user-attachments/assets/52310074-f033-4558-aae4-56c9073da7b2" />
+
+```
+SigninLogs
+| where UserPrincipalName == "test.victim@://onmicrosoft.com"
+| where TimeGenerated >= ago(24h)
+| project TimeGenerated, ResultType, ResultDescription, IPAddress, Location, ClientAppUsed, UserAgent
+| sort by TimeGenerated desc
+```
+
+• Analyze the Results:
+	
+	• Containment Confirmed (ResultType is only 50126 or 50053): The attack was completely blocked by password validation and Entra ID Smart Lockout.
+	
+	• Compromise Detected (ResultType == "0" from the attacker IP): The attacker guessed the password, requiring immediate password reset, session revocation, and MFA enforcement.
+
+
+
+### Step 3: Document Findings & Close the Incident
+
+Once you confirm zero successful logins and zero unauthorized directory changes, close out the ticket with clear forensic documentation.
+
+• Set Status & Classification: Change Status to Resolved / Closed and select Benign positive > Security testing (in a real attack where logins failed, you would classify it as True positive > Credential access and block the IP via Conditional Access).
+
+• Add Closing Notes: Record the attack timeframe, target account, source IP, total failed attempts, confirmation of zero ResultType == "0" events, and final disposition.
+
+<img width="1879" height="916" alt="image" src="https://github.com/user-attachments/assets/5c18fbf1-0c2a-45b8-8a86-0da16ba1fc7c" />
+
+
+### Result
+
+* Email
+
+<img width="1903" height="845" alt="image" src="https://github.com/user-attachments/assets/22b92448-27b6-4b92-bd0d-008b8941dd38" />
+
+* Click on the link in the mail
+<img width="1912" height="906" alt="image" src="https://github.com/user-attachments/assets/2106f129-fadf-48b3-844f-19c607ef9c4c" />
+
