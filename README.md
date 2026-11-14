@@ -124,15 +124,6 @@ Upon executing an end-to-end validation test (4 consecutive failed sign-in attem
 • Entity Mapping Accelerates Triage: Mapping KQL output fields to native Sentinel entities transforms raw log rows into actionable forensic artifacts.
 • Automation Bridges Detection and Response: Integrating Logic Apps with Sentinel Automation Rules ensures critical identity alerts reach analysts immediately rather than sitting unnoticed in a queue.
 
-## Suggested Screenshots to Upload to Your GitHub images/ Folder
-
-1. 01-kql-signinlogs-hunt.png — Your KQL query output showing error 50126 and source IP details.
-2. 02-analytics-rule-entity-mapping.png — Your scheduled query rule showing Account and IP entity mappings.
-3. 03-logic-app-designer.png — Your Playbook-BruteForce-Email workflow showing the Sentinel trigger and SMTP action.
-4. 04-defender-incident-queue.png — Your closed/triaged incidents in the Microsoft Defender portal.
-5. 05-soar-alert-email.png — The automated SOC alert email delivered to your Gmail inbox.
-You can copy and paste this entire Markdown report directly into your GitHub repository's README.md file! Let me know if you want to customize any section—or if you're ready to build Project C (Visual SOC Threat Hunting Workbook) so we can add dashboard screenshots to your repo too!
-
 ---
 
 # Step By Step
