@@ -12,16 +12,16 @@ By ingesting real-time identity telemetry (SigninLogs and AuditLogs), authoring 
 ## Architecture & Workflow
 
 ```
-[Simulated Brute-Force Attack] 
-       │ (Failed Logins: Error 50126 / 50053)
-       ▼
-[Microsoft Entra ID] ──(Diagnostic Settings)──► [Log Analytics Workspace: soc-lab-logs-01]
-                                                               │
-                                                               ▼
+												[Simulated Brute-Force Attack] 
+											│ (Failed Logins: Error 50126 / 50053)
+																▼
+					[Microsoft Entra ID] ──(Diagnostic Settings)──► [Log Analytics Workspace: soc-lab-logs-01]
+                                                               	│
+	 															▼
                                                      [Microsoft Sentinel SIEM]
-                                                               │
-                                   ┌───────────────────────────┴───────────────────────────┐
-                                   ▼                                                       ▼
+                                                               	│
+                                   ┌───────────────────────────	┴───────────────────────────┐
+                                   ▼                                                       	▼
                      [Scheduled Analytics Rule (KQL)]                        [Entity Mapping & Triage]
                      • MITRE: Credential Access                              • Account: UserPrincipalName
                      • Threshold: >= 3 attempts / 5m                         • IP: IPAddress
