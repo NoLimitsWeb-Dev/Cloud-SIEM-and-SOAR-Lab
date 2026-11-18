@@ -1,4 +1,4 @@
-# -Cloud-SIEM-and-SOAR-Lab
+# Cloud-SIEM-and-SOAR-Lab
 
 ## Cloud SIEM & SOAR Lab: Automated Identity Brute-Force Detection & Response with Microsoft Sentinel
 
